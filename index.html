@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interactive Git &amp; GitHub Learning Simulator</title>
+<style>
+/* ===========================
+   CSS RESET & BASE STYLES
+   =========================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --bg-glass: rgba(22, 27, 34, 0.7);
+  --border-color: rgba(48, 54, 61, 0.8);
+  --border-glow: rgba(88, 166, 255, 0.3);
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-purple: #bc8cff;
+  --accent-orange: #d29922;
+  --accent-red: #f85149;
+  --accent-pink: #f778ba;
+  --accent-cyan: #39d2c0;
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow-blue: 0 0 20px rgba(88, 166, 255, 0.15);
+  --shadow-glow-green: 0 0 20px rgba(63, 185, 80, 0.15);
+  --shadow-glow-purple: 0 0 20px rgba(188, 140, 255, 0.15);
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ===========================
+   ANIMATIONS
+   =========================== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideRight {
+  from { transform: translateX(-30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(88,166,255,0.3); }
+  50% { box-shadow: 0 0 20px rgba(88,166,255,0.6); }
+}
+@keyframes flowArrow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes commitPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes moveFile {
+  0% { transform: translateX(0); opacity: 1; }
+  50% { transform: translateX(50px); opacity: 0.5; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes arrowPulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+@keyframes conflictShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ===========================
+   HEADER
+   =========================== */
+.header {
+  text-align: center;
+  padding: 40px 20px 30px;
+  animation: fadeInUp 0.8s ease;
+  position: relative;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+}
+.header h1 {
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-pink));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+  margin-bottom: 10px;
+}
+.header .git-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  display: inline-block;
+  animation: float 3s ease-in-out infinite;
+}
+.header p {
+  color: var(--text-secondary);
+  max-width: 650px;
+  margin: 0 auto;
+  font-size: 0.95rem;
+}
+.badge {
+  display: inline-block;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.75rem;
+  color: var(--accent-green);
+  margin-top: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* ===========================
+   LAYOUT CONTAINER
+   =========================== */
+.app-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ===========================
+   GLASS CARD
+   =========================== */
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: var(--transition);
+  box-shadow: var(--shadow-lg);
+}
+.glass-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-lg), var(--shadow-glow-blue);
+}
+.card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .icon {
+  font-size: 1.1rem;
+}
+
+/* ===========================
+   COMMAND BUTTONS BAR
+   =========================== */
+.commands-section {
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s ease 0.2s both;
+}
+.commands-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.cmd-btn {
+  position: relative;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.cmd-btn:hover {
+  background: rgba(88, 166, 255, 0.1);
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-blue);
+}
+.cmd-btn:active {
+  transform: translateY(0);
+}
+.cmd-btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  animation: fadeIn 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+.cmd-btn.init { border-left: 3px solid var(--accent-blue); }
+.cmd-btn.stage { border-left: 3px solid var(--accent-green); }
+.cmd-btn.commit { border-left: 3px solid var(--accent-purple); }
+.cmd-btn.branch { border-left: 3px solid var(--accent-orange); }
+.cmd-btn.remote { border-left: 3px solid var(--accent-pink); }
+.cmd-btn.info { border-left: 3px solid var(--accent-cyan); }
+
+/* ===========================
+   MAIN DASHBOARD GRID
+   =========================== */
+.dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 16px;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s ease 0.3s both;
+}
+.zone-working   { grid-column: 1; }
+.zone-staging   { grid-column: 2; }
+.zone-local     { grid-column: 3; }
+.zone-remote    { grid-column: 4; }
+
+/* Color coding for zones */
+.zone-working .card-title  { color: var(--accent-orange); }
+.zone-staging .card-title  { color: var(--accent-green); }
+.zone-local .card-title    { color: var(--accent-blue); }
+.zone-remote .card-title   { color: var(--accent-pink); }
+
+/* Zone arrow indicators */
+.zone-arrow {
+  display: none;
+}
+
+/* File items */
+.file-list {
+  min-height: 80px;
+}
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  font-family: 'Consolas', monospace;
+  animation: slideRight 0.4s ease;
+  transition: var(--transition);
+}
+.file-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+.file-item .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.file-item .status-dot.modified { background: var(--accent-orange); }
+.file-item .status-dot.staged   { background: var(--accent-green); }
+.file-item .status-dot.committed{ background: var(--accent-blue); }
+.file-item .status-dot.pushed   { background: var(--accent-pink); }
+.empty-state {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* Commit list */
+.commit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  animation: slideRight 0.4s ease;
+}
+.commit-node {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  flex-shrink: 0;
+  margin-top: 4px;
+  animation: commitPop 0.5s ease;
+}
+.commit-node.main-branch { background: var(--accent-blue); }
+.commit-node.feature-branch { background: var(--accent-purple); }
+.commit-node.merge { background: var(--accent-green); border: 2px solid var(--accent-blue); }
+.commit-info {
+  flex: 1;
+  min-width: 0;
+}
+.commit-hash {
+  font-family: 'Consolas', monospace;
+  font-size: 0.72rem;
+  color: var(--accent-blue);
+}
+.commit-msg {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.commit-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ===========================
+   FLOW ARROWS SECTION
+   =========================== */
+.flow-arrows {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding: 16px;
+  animation: fadeInUp 0.8s ease 0.35s both;
+}
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.flow-step .arrow {
+  font-size: 1.2rem;
+  color: var(--accent-blue);
+  animation: arrowPulse 2s ease-in-out infinite;
+}
+.flow-step .label {
+  background: var(--bg-tertiary);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-family: 'Consolas', monospace;
+  font-size: 0.72rem;
+}
+
+/* ===========================
+   BRANCH GRAPH
+   =========================== */
+.branch-graph-section {
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s ease 0.4s both;
+}
+.branch-graph-container {
+  width: 100%;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+#branchCanvas {
+  display: block;
+  width: 100%;
+  min-height: 200px;
+}
+
+/* Branch labels */
+.branch-labels {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.branch-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+.branch-label .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.branch-label .dot.main   { background: var(--accent-blue); }
+.branch-label .dot.feature { background: var(--accent-purple); }
+.branch-label .dot.head   { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+
+/* ===========================
+   BOTTOM PANELS GRID
+   =========================== */
+.panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s ease 0.5s both;
+}
+
+/* ===========================
+   TERMINAL PANEL
+   =========================== */
+.terminal-panel {
+  font-family: 'Consolas', 'Courier New', monospace;
+  max-height: 340px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 10px;
+}
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+.terminal-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.terminal-dots .red { background: var(--accent-red); }
+.terminal-dots .yellow { background: var(--accent-orange); }
+.terminal-dots .green { background: var(--accent-green); }
+.terminal-title {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.terminal-body {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+.terminal-line {
+  animation: fadeIn 0.3s ease;
+}
+.terminal-line .prompt {
+  color: var(--accent-green);
+}
+.terminal-line .cmd {
+  color: var(--accent-blue);
+}
+.terminal-line .output {
+  color: var(--text-secondary);
+}
+.terminal-line .error {
+  color: var(--accent-red);
+}
+.terminal-line .success {
+  color: var(--accent-green);
+}
+.terminal-line .info {
+  color: var(--accent-cyan);
+}
+.terminal-line .warning {
+  color: var(--accent-orange);
+}
+.terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--accent-green);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+/* ===========================
+   EXPLANATION PANEL
+   =========================== */
+.explanation-panel {
+  max-height: 340px;
+  overflow-y: auto;
+}
+.explanation-block {
+  animation: fadeIn 0.5s ease;
+}
+.explanation-block h3 {
+  font-size: 0.95rem;
+  color: var(--accent-blue);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.explanation-block p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.7;
+}
+.mistake-box {
+  background: rgba(248, 81, 73, 0.08);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 8px;
+}
+.mistake-box .label {
+  font-size: 0.75rem;
+  color: var(--accent-red);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.mistake-box p {
+  font-size: 0.82rem;
+  color: rgba(248, 81, 73, 0.8);
+  margin: 0;
+}
+
+/* ===========================
+   STORY MODE
+   =========================== */
+.story-section {
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s ease 0.6s both;
+}
+.story-intro {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  padding: 14px;
+  background: rgba(88, 166, 255, 0.05);
+  border: 1px solid rgba(88, 166, 255, 0.15);
+  border-radius: var(--radius-sm);
+  line-height: 1.7;
+}
+.story-intro strong {
+  color: var(--accent-blue);
+}
+.scenario-btns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.scenario-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+}
+.scenario-btn:hover {
+  border-color: var(--accent-purple);
+  background: rgba(188, 140, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-purple);
+}
+.scenario-btn .scenario-num {
+  font-size: 0.7rem;
+  color: var(--accent-purple);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.scenario-btn .scenario-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.scenario-btn .scenario-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Story result area */
+.story-result {
+  min-height: 60px;
+}
+.story-result-content {
+  animation: fadeIn 0.5s ease;
+}
+.conflict-block {
+  background: var(--bg-primary);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin: 12px 0;
+  font-family: 'Consolas', monospace;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  animation: conflictShake 0.5s ease;
+}
+.conflict-block .marker {
+  color: var(--accent-red);
+  font-weight: 700;
+}
+.conflict-block .yours {
+  color: var(--accent-green);
+  background: rgba(63, 185, 80, 0.08);
+  display: block;
+  padding: 2px 6px;
+}
+.conflict-block .theirs {
+  color: var(--accent-blue);
+  background: rgba(88, 166, 255, 0.08);
+  display: block;
+  padding: 2px 6px;
+}
+.resolved-block {
+  background: var(--bg-primary);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin: 12px 0;
+  font-family: 'Consolas', monospace;
+  font-size: 0.82rem;
+}
+.resolved-block .label {
+  color: var(--accent-green);
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+/* ===========================
+   CONCEPTS SECTION
+   =========================== */
+.concepts-section {
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s ease 0.7s both;
+}
+.concepts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.concept-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: var(--transition);
+  cursor: default;
+}
+.concept-card:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 15px rgba(57, 210, 192, 0.1);
+}
+.concept-card h4 {
+  color: var(--accent-cyan);
+  font-size: 0.88rem;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.concept-card p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===========================
+   QUIZ SECTION
+   =========================== */
+.quiz-section {
+  margin-bottom: 40px;
+  animation: fadeInUp 0.8s ease 0.8s both;
+}
+.quiz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.quiz-item {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  transition: var(--transition);
+}
+.quiz-item .question {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+.quiz-item .options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.quiz-item .option-btn {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.84rem;
+  text-align: left;
+  transition: var(--transition);
+}
+.quiz-item .option-btn:hover:not(.selected) {
+  background: rgba(88, 166, 255, 0.08);
+  border-color: rgba(88, 166, 255, 0.3);
+}
+.quiz-item .option-btn.correct {
+  background: rgba(63, 185, 80, 0.12);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+.quiz-item .option-btn.wrong {
+  background: rgba(248, 81, 73, 0.12);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+.quiz-item .option-btn.selected {
+  pointer-events: none;
+}
+.quiz-feedback {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  animation: fadeIn 0.3s ease;
+  display: none;
+}
+.quiz-feedback.show { display: block; }
+.quiz-feedback.correct {
+  background: rgba(63, 185, 80, 0.08);
+  border: 1px solid rgba(63, 185, 80, 0.2);
+  color: var(--accent-green);
+}
+.quiz-feedback.wrong {
+  background: rgba(248, 81, 73, 0.08);
+  border: 1px solid rgba(248, 81, 73, 0.2);
+  color: var(--accent-red);
+}
+
+/* ===========================
+   FOOTER
+   =========================== */
+.footer {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  border-top: 1px solid var(--border-color);
+}
+.footer a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+/* ===========================
+   RESPONSIVE
+   =========================== */
+@media (max-width: 1100px) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 768px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+  .panels-grid {
+    grid-template-columns: 1fr;
+  }
+  .flow-arrows {
+    flex-direction: column;
+  }
+  .commands-grid {
+    justify-content: flex-start;
+  }
+}
+
+/* Notification toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  animation: fadeInUp 0.4s ease;
+  max-width: 320px;
+  font-size: 0.85rem;
+}
+.toast.success { border-left: 4px solid var(--accent-green); }
+.toast.error { border-left: 4px solid var(--accent-red); }
+.toast.info { border-left: 4px solid var(--accent-blue); }
+</style>
+</head>
+<body>
+
+<!-- =======================
+     HEADER
+     ======================= -->
+<header class="header">
+  <div class="git-icon">&#x1F5C3;&#xFE0F;</div>
+  <h1>Interactive Git &amp; GitHub Learning Simulator</h1>
+  <p>A safe Git simulation environment for learning. No real Git commands are executed &mdash; everything is visual.</p>
+  <span class="badge">&#x2728; Simulation Mode &mdash; Safe to Experiment</span>
+</header>
+
+<div class="app-container">
+
+  <!-- =======================
+       COMMAND BUTTONS
+       ======================= -->
+  <section class="commands-section glass-card">
+    <div class="card-title"><span class="icon">&#x2328;&#xFE0F;</span> Git Commands</div>
+    <div class="commands-grid">
+      <button class="cmd-btn init" onclick="cmdInit()" data-tooltip="Initialize a new Git repository">git init</button>
+      <button class="cmd-btn stage" onclick="cmdAdd()" data-tooltip="Stage changes for commit">git add .</button>
+      <button class="cmd-btn commit" onclick="cmdCommit()" data-tooltip="Save staged changes as a commit">git commit</button>
+      <button class="cmd-btn info" onclick="cmdStatus()" data-tooltip="Check current repo status">git status</button>
+      <button class="cmd-btn info" onclick="cmdLog()" data-tooltip="View commit history">git log</button>
+      <button class="cmd-btn branch" onclick="cmdBranch()" data-tooltip="Create a new feature branch">git branch feature-x</button>
+      <button class="cmd-btn branch" onclick="cmdCheckout()" data-tooltip="Switch to another branch">git checkout feature-x</button>
+      <button class="cmd-btn commit" onclick="cmdMerge()" data-tooltip="Merge feature branch into current">git merge feature-x</button>
+      <button class="cmd-btn remote" onclick="cmdFetch()" data-tooltip="Download remote changes without merging">git fetch</button>
+      <button class="cmd-btn remote" onclick="cmdPull()" data-tooltip="Fetch + merge remote changes">git pull</button>
+      <button class="cmd-btn remote" onclick="cmdPush()" data-tooltip="Upload local commits to remote">git push</button>
+      <button class="cmd-btn info" onclick="cmdReset()" data-tooltip="Reset the entire simulation" style="border-left-color:var(--accent-red);">&#x21BB; Reset Sim</button>
+    </div>
+  </section>
+
+  <!-- =======================
+       FLOW ARROWS
+       ======================= -->
+  <div class="flow-arrows glass-card">
+    <div class="flow-step">
+      <span class="label">Working Dir</span>
+      <span class="arrow" id="arrow1">&#x27A1;&#xFE0F;</span>
+      <span class="label" style="color:var(--accent-green)">git add</span>
+    </div>
+    <div class="flow-step">
+      <span class="label">Staging</span>
+      <span class="arrow" id="arrow2">&#x27A1;&#xFE0F;</span>
+      <span class="label" style="color:var(--accent-purple)">git commit</span>
+    </div>
+    <div class="flow-step">
+      <span class="label">Local Repo</span>
+      <span class="arrow" id="arrow3">&#x27A1;&#xFE0F;</span>
+      <span class="label" style="color:var(--accent-pink)">git push</span>
+    </div>
+    <div class="flow-step">
+      <span class="label">Remote (GitHub)</span>
+    </div>
+  </div>
+
+  <!-- =======================
+       DASHBOARD 4-ZONE
+       ======================= -->
+  <div class="dashboard">
+    <!-- Working Directory -->
+    <div class="glass-card zone-working">
+      <div class="card-title"><span class="icon">&#x1F4C1;</span> Working Directory</div>
+      <div class="file-list" id="workingDir">
+        <div class="empty-state">No files yet. Click <strong>git init</strong> to start.</div>
+      </div>
+    </div>
+    <!-- Staging Area -->
+    <div class="glass-card zone-staging">
+      <div class="card-title"><span class="icon">&#x1F4E6;</span> Staging Area</div>
+      <div class="file-list" id="stagingArea">
+        <div class="empty-state">Nothing staged.</div>
+      </div>
+    </div>
+    <!-- Local Repository -->
+    <div class="glass-card zone-local">
+      <div class="card-title"><span class="icon">&#x1F4BB;</span> Local Repository</div>
+      <div id="localBranchInfo" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px;"></div>
+      <div class="file-list" id="localRepo">
+        <div class="empty-state">No commits yet.</div>
+      </div>
+    </div>
+    <!-- Remote Repository -->
+    <div class="glass-card zone-remote">
+      <div class="card-title"><span class="icon">&#x2601;&#xFE0F;</span> Remote (GitHub)</div>
+      <div id="remoteBranchInfo" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px;"></div>
+      <div class="file-list" id="remoteRepo">
+        <div class="empty-state">Not connected to remote.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================
+       BRANCH GRAPH
+       ======================= -->
+  <section class="branch-graph-section glass-card">
+    <div class="card-title"><span class="icon">&#x1F333;</span> Branch Graph Visualizer</div>
+    <div class="branch-graph-container">
+      <canvas id="branchCanvas" height="220"></canvas>
+    </div>
+    <div class="branch-labels" id="branchLabels">
+      <div class="branch-label"><span class="dot main"></span> main</div>
+      <div class="branch-label"><span class="dot head"></span> HEAD</div>
+    </div>
+  </section>
+
+  <!-- =======================
+       TERMINAL + EXPLANATION
+       ======================= -->
+  <div class="panels-grid">
+    <!-- Terminal Panel -->
+    <div class="glass-card terminal-panel">
+      <div class="terminal-header">
+        <div class="terminal-dots"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
+        <span class="terminal-title">Terminal Output</span>
+      </div>
+      <div class="terminal-body" id="terminalBody">
+        <div class="terminal-line"><span class="prompt">$</span> <span class="info">Welcome to Git Simulator v1.0</span></div>
+        <div class="terminal-line"><span class="output">Type commands using the buttons above.</span></div>
+        <div class="terminal-line"><span class="prompt">$</span> <span class="terminal-cursor"></span></div>
+      </div>
+    </div>
+    <!-- Explanation Panel -->
+    <div class="glass-card explanation-panel">
+      <div class="card-title"><span class="icon">&#x1F4A1;</span> What Just Happened?</div>
+      <div id="explanationContent">
+        <div class="explanation-block">
+          <h3>&#x1F44B; Welcome!</h3>
+          <p>Click any Git command button above to see it simulated. Each action will update the visual zones, the branch graph, and this panel will explain what happened in plain English.</p>
+          <p>Start with <strong>git init</strong> to create a new repository!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================
+       STORY MODE
+       ======================= -->
+  <section class="story-section glass-card">
+    <div class="card-title"><span class="icon">&#x1F4D6;</span> Story Mode &mdash; Collaboration Scenarios</div>
+    <div class="story-intro">
+      <strong>&#x1F9D1;&#x200D;&#x1F4BB; The Story:</strong> You and your colleague <strong>Alex</strong> are both working on the same project hosted on GitHub. You each have a local copy. Let's explore what can go wrong (and right!) when two people collaborate.
+    </div>
+    <div class="scenario-btns">
+      <button class="scenario-btn" onclick="runScenario(1)">
+        <div class="scenario-num">Scenario 1</div>
+        <div class="scenario-title">Alex Pushes First</div>
+        <div class="scenario-desc">Alex pushes a commit before you. What happens when you push?</div>
+      </button>
+      <button class="scenario-btn" onclick="runScenario(2)">
+        <div class="scenario-num">Scenario 2</div>
+        <div class="scenario-title">Push Without Pulling</div>
+        <div class="scenario-desc">You try to push but haven't pulled Alex's changes.</div>
+      </button>
+      <button class="scenario-btn" onclick="runScenario(3)">
+        <div class="scenario-num">Scenario 3</div>
+        <div class="scenario-title">Merge Conflict!</div>
+        <div class="scenario-desc">Both of you edit the same line. Git can't auto-merge.</div>
+      </button>
+      <button class="scenario-btn" onclick="runScenario(4)">
+        <div class="scenario-num">Scenario 4</div>
+        <div class="scenario-title">Clean Merge</div>
+        <div class="scenario-desc">You both edit different files. Git merges cleanly.</div>
+      </button>
+    </div>
+    <div class="story-result glass-card" id="storyResult" style="border-color:var(--bg-tertiary);background:var(--bg-secondary);">
+      <div class="empty-state">Click a scenario above to see it play out.</div>
+    </div>
+  </section>
+
+  <!-- =======================
+       KEY CONCEPTS
+       ======================= -->
+  <section class="concepts-section">
+    <div class="glass-card" style="margin-bottom:0">
+      <div class="card-title"><span class="icon">&#x1F4DA;</span> Key Git Concepts Explained</div>
+      <div class="concepts-grid">
+        <div class="concept-card">
+          <h4>&#x1F3AF; HEAD</h4>
+          <p>HEAD is a pointer that tells Git which commit (and branch) you're currently looking at. Think of it as a "You Are Here" marker. When you switch branches, HEAD moves to point at that branch.</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x1F310; origin</h4>
+          <p><code>origin</code> is the default name Git gives to the remote server (like GitHub) where your project lives. When you <code>git push origin main</code>, you're saying "upload my code to the server called origin, on the main branch."</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x1F3E0; main</h4>
+          <p><code>main</code> (formerly <code>master</code>) is the default primary branch. It's usually the "official" version of your code. Feature branches split off from main and merge back into it.</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x1F4E1; Remote Tracking Branch</h4>
+          <p><code>origin/main</code> is your local copy's knowledge of what the remote looks like. When you <code>fetch</code>, this gets updated. It's like a bookmark saying "this is where the remote was last time I checked."</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x1F504; fetch vs pull</h4>
+          <p><strong>fetch</strong> = download changes but don't merge them (safe peek). <strong>pull</strong> = fetch + merge (applies changes immediately). Use fetch when you want to review first; pull when you want to update right away.</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x26D4; Why Push Gets Rejected</h4>
+          <p>Push is rejected when the remote has commits you don't have locally. Git prevents you from overwriting someone else's work. Fix: <code>git pull</code> first, resolve any conflicts, then push again.</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x1F4A5; Why Merge Conflicts Happen</h4>
+          <p>Conflicts occur when two people edit the <strong>same lines</strong> in the same file. Git can't decide whose version to keep, so it asks you to manually choose. They're normal &mdash; not scary!</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x1F4DD; What is a Pull Request?</h4>
+          <p>A Pull Request (PR) is a GitHub feature where you ask others to review your code before merging it into main. It's not a Git command &mdash; it's a collaboration workflow on GitHub. It enables code review and discussion.</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x2728; Why Small Commits Are Better</h4>
+          <p>Small, focused commits make it easier to: find bugs (with <code>git bisect</code>), understand history, revert specific changes, and review code. Think of commits like "save checkpoints" in a game.</p>
+        </div>
+        <div class="concept-card">
+          <h4>&#x26A0;&#xFE0F; Switching Branches Without Committing</h4>
+          <p>If you switch branches with uncommitted changes, Git may carry those changes to the new branch (or block you). Always commit or <code>git stash</code> your work before switching to avoid losing or mixing changes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =======================
+       MINI QUIZ
+       ======================= -->
+  <section class="quiz-section glass-card">
+    <div class="card-title"><span class="icon">&#x1F9E9;</span> Mini Quiz &mdash; Test Your Knowledge</div>
+    <div class="quiz-list" id="quizList">
+      <!-- Quizzes injected by JS -->
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  Made with &#x2764;&#xFE0F; for learning Git &amp; GitHub &mdash; Interactive Simulator &copy; 2026
+</footer>
+
+<!-- =======================
+     JAVASCRIPT
+     ======================= -->
+<script>
+/* ===================================================
+   STATE MANAGEMENT
+   =================================================== */
+var state = {
+  initialized: false,
+  currentBranch: 'main',
+  branches: ['main'],
+  workingFiles: [],
+  stagedFiles: [],
+  /* Each commit: { hash, message, branch, files } */
+  localCommits: [],
+  remoteCommits: [],
+  commitCounter: 0,
+  featureBranchCreated: false,
+  featureBranchMerged: false,
+  remoteLinked: false,
+  fileCounter: 0
+};
+
+/* ===================================================
+   UTILITY FUNCTIONS
+   =================================================== */
+function generateHash() {
+  var chars = '0123456789abcdef';
+  var hash = '';
+  for (var i = 0; i < 7; i++) hash += chars[Math.floor(Math.random() * 16)];
+  return hash;
+}
+
+function getTimestamp() {
+  var now = new Date();
+  return now.getHours().toString().padStart(2,'0') + ':' +
+         now.getMinutes().toString().padStart(2,'0') + ':' +
+         now.getSeconds().toString().padStart(2,'0');
+}
+
+function showToast(msg, type) {
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + (type || 'info');
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(function() { toast.style.opacity = '0'; toast.style.transform = 'translateY(-10px)'; }, 2500);
+  setTimeout(function() { toast.remove(); }, 3000);
+}
+
+/* ===================================================
+   TERMINAL FUNCTIONS
+   =================================================== */
+function terminalWrite(lines) {
+  var body = document.getElementById('terminalBody');
+  /* Remove cursor line */
+  var cursorLine = body.querySelector('.terminal-line:last-child');
+  if (cursorLine && cursorLine.querySelector('.terminal-cursor')) cursorLine.remove();
+
+  lines.forEach(function(line) {
+    var div = document.createElement('div');
+    div.className = 'terminal-line';
+    div.innerHTML = line;
+    body.appendChild(div);
+  });
+
+  /* Add new cursor */
+  var cursorDiv = document.createElement('div');
+  cursorDiv.className = 'terminal-line';
+  cursorDiv.innerHTML = '<span class="prompt">$</span> <span class="terminal-cursor"></span>';
+  body.appendChild(cursorDiv);
+
+  body.scrollTop = body.scrollHeight;
+}
+
+function terminalClear() {
+  var body = document.getElementById('terminalBody');
+  body.innerHTML = '';
+  var cursorDiv = document.createElement('div');
+  cursorDiv.className = 'terminal-line';
+  cursorDiv.innerHTML = '<span class="prompt">$</span> <span class="terminal-cursor"></span>';
+  body.appendChild(cursorDiv);
+}
+
+/* ===================================================
+   EXPLANATION PANEL
+   =================================================== */
+function setExplanation(title, explanation, mistake) {
+  var el = document.getElementById('explanationContent');
+  var html = '<div class="explanation-block">';
+  html += '<h3>' + title + '</h3>';
+  html += '<p>' + explanation + '</p>';
+  if (mistake) {
+    html += '<div class="mistake-box"><div class="label">&#x26A0;&#xFE0F; Common Mistake</div><p>' + mistake + '</p></div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+/* ===================================================
+   UI RENDERERS
+   =================================================== */
+function renderWorkingDir() {
+  var el = document.getElementById('workingDir');
+  if (!state.initialized) {
+    el.innerHTML = '<div class="empty-state">No files yet. Click <strong>git init</strong> to start.</div>';
+    return;
+  }
+  if (state.workingFiles.length === 0) {
+    el.innerHTML = '<div class="empty-state">Working directory clean &#x2705;</div>';
+    return;
+  }
+  el.innerHTML = state.workingFiles.map(function(f) {
+    return '<div class="file-item"><span class="status-dot modified"></span>' + f + ' <span style="color:var(--accent-orange);font-size:0.7rem;margin-left:auto;">modified</span></div>';
+  }).join('');
+}
+
+function renderStaging() {
+  var el = document.getElementById('stagingArea');
+  if (state.stagedFiles.length === 0) {
+    el.innerHTML = '<div class="empty-state">Nothing staged.</div>';
+    return;
+  }
+  el.innerHTML = state.stagedFiles.map(function(f) {
+    return '<div class="file-item"><span class="status-dot staged"></span>' + f + ' <span style="color:var(--accent-green);font-size:0.7rem;margin-left:auto;">staged</span></div>';
+  }).join('');
+}
+
+function renderLocalRepo() {
+  var el = document.getElementById('localRepo');
+  var info = document.getElementById('localBranchInfo');
+  if (!state.initialized) {
+    el.innerHTML = '<div class="empty-state">No commits yet.</div>';
+    info.innerHTML = '';
+    return;
+  }
+  info.innerHTML = '&#x1F3F7;&#xFE0F; Branch: <strong style="color:var(--accent-blue)">' + state.currentBranch + '</strong> &nbsp;|&nbsp; HEAD &#x2192; ' + state.currentBranch +
+    (state.localCommits.length > 0 ? ' @ <code style="color:var(--accent-blue)">' + state.localCommits[state.localCommits.length - 1].hash + '</code>' : '');
+  if (state.localCommits.length === 0) {
+    el.innerHTML = '<div class="empty-state">No commits yet. Stage files and commit!</div>';
+    return;
+  }
+  var display = state.localCommits.slice().reverse().slice(0, 8);
+  el.innerHTML = display.map(function(c) {
+    var nodeClass = c.branch === 'main' ? 'main-branch' : (c.merge ? 'merge' : 'feature-branch');
+    return '<div class="commit-item"><div class="commit-node ' + nodeClass + '"></div><div class="commit-info"><div class="commit-hash">' + c.hash + '</div><div class="commit-msg">' + c.message + '</div><div class="commit-meta">' + c.branch + (c.merge ? ' (merge)' : '') + '</div></div></div>';
+  }).join('');
+}
+
+function renderRemoteRepo() {
+  var el = document.getElementById('remoteRepo');
+  var info = document.getElementById('remoteBranchInfo');
+  if (!state.remoteLinked) {
+    el.innerHTML = '<div class="empty-state">Not connected to remote.</div>';
+    info.innerHTML = '';
+    return;
+  }
+  info.innerHTML = '&#x1F310; origin/main' +
+    (state.remoteCommits.length > 0 ? ' @ <code style="color:var(--accent-pink)">' + state.remoteCommits[state.remoteCommits.length - 1].hash + '</code>' : '');
+  if (state.remoteCommits.length === 0) {
+    el.innerHTML = '<div class="empty-state">Remote is empty. Push some commits!</div>';
+    return;
+  }
+  var display = state.remoteCommits.slice().reverse().slice(0, 8);
+  el.innerHTML = display.map(function(c) {
+    var nodeClass = c.branch === 'main' ? 'main-branch' : 'feature-branch';
+    return '<div class="commit-item"><div class="commit-node ' + nodeClass + '" style="background:var(--accent-pink)"></div><div class="commit-info"><div class="commit-hash">' + c.hash + '</div><div class="commit-msg">' + c.message + '</div><div class="commit-meta">origin/' + c.branch + '</div></div></div>';
+  }).join('');
+}
+
+function renderAll() {
+  renderWorkingDir();
+  renderStaging();
+  renderLocalRepo();
+  renderRemoteRepo();
+  renderBranchGraph();
+  renderBranchLabels();
+}
+
+function renderBranchLabels() {
+  var el = document.getElementById('branchLabels');
+  var html = '<div class="branch-label"><span class="dot main"></span> main</div>';
+  if (state.featureBranchCreated) {
+    html += '<div class="branch-label"><span class="dot feature"></span> feature-x</div>';
+  }
+  html += '<div class="branch-label"><span class="dot head"></span> HEAD &#x2192; ' + state.currentBranch + '</div>';
+  el.innerHTML = html;
+}
+
+/* ===================================================
+   BRANCH GRAPH RENDERER (Canvas)
+   =================================================== */
+function renderBranchGraph() {
+  var canvas = document.getElementById('branchCanvas');
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = 220 * dpr;
+  canvas.style.height = '220px';
+  ctx.scale(dpr, dpr);
+
+  var W = canvas.offsetWidth;
+  var H = 220;
+  ctx.clearRect(0, 0, W, H);
+
+  if (state.localCommits.length === 0 && !state.featureBranchCreated) {
+    /* Draw placeholder */
+    ctx.fillStyle = '#6e7681';
+    ctx.font = '14px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Branch graph will appear here after commits', W / 2, H / 2);
+    return;
+  }
+
+  var mainY = 70;
+  var featureY = 150;
+  var startX = 60;
+  var gap = Math.min(90, (W - 120) / Math.max(state.localCommits.length, 1));
+  if (gap < 40) gap = 40;
+
+  var commits = state.localCommits;
+  var nodes = [];
+
+  /* Calculate node positions */
+  commits.forEach(function(c, i) {
+    var x = startX + i * gap;
+    var y = (c.branch === 'feature-x' && !c.merge) ? featureY : mainY;
+    nodes.push({ x: x, y: y, commit: c, index: i });
+  });
+
+  /* Draw branch lines */
+  ctx.lineWidth = 3;
+
+  /* Main branch line */
+  var mainNodes = nodes.filter(function(n) { return n.y === mainY; });
+  if (mainNodes.length > 0) {
+    ctx.strokeStyle = '#58a6ff';
+    ctx.beginPath();
+    /* Draw from start to first main node */
+    ctx.moveTo(startX - 30, mainY);
+    mainNodes.forEach(function(n) { ctx.lineTo(n.x, n.y); });
+    /* Extend line beyond last node */
+    ctx.lineTo(mainNodes[mainNodes.length - 1].x + 40, mainY);
+    ctx.stroke();
+  }
+
+  /* Feature branch line */
+  var featureNodes = nodes.filter(function(n) { return n.y === featureY; });
+  if (featureNodes.length > 0) {
+    ctx.strokeStyle = '#bc8cff';
+    /* Find branch-off point */
+    var branchOffX = startX;
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].commit.branch === 'feature-x') {
+        branchOffX = i > 0 ? nodes[i - 1].x : startX;
+        break;
+      }
+    }
+    ctx.beginPath();
+    ctx.moveTo(branchOffX, mainY);
+    featureNodes.forEach(function(n) { ctx.lineTo(n.x, n.y); });
+    ctx.stroke();
+  }
+
+  /* Draw merge line if merged */
+  var mergeNode = nodes.find(function(n) { return n.commit.merge; });
+  if (mergeNode && featureNodes.length > 0) {
+    ctx.strokeStyle = '#3fb950';
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(featureNodes[featureNodes.length - 1].x, featureNodes[featureNodes.length - 1].y);
+    ctx.lineTo(mergeNode.x, mergeNode.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* Draw commit nodes */
+  nodes.forEach(function(n) {
+    var color = n.commit.branch === 'feature-x' ? '#bc8cff' : '#58a6ff';
+    if (n.commit.merge) color = '#3fb950';
+
+    /* Glow */
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+
+    /* Outer ring */
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* Inner dot */
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0d1117';
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* Hash label */
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '10px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(n.commit.hash, n.x, n.y - 16);
+
+    /* Message label (abbreviated) */
+    var msg = n.commit.message;
+    if (msg.length > 14) msg = msg.substring(0, 12) + '..';
+    ctx.fillStyle = '#6e7681';
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.fillText(msg, n.x, n.y + 26);
+  });
+
+  /* HEAD indicator */
+  if (nodes.length > 0) {
+    var headNode = nodes[nodes.length - 1];
+    ctx.fillStyle = '#3fb950';
+    ctx.shadowColor = '#3fb950';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(headNode.x, headNode.y - 28);
+    ctx.lineTo(headNode.x - 5, headNode.y - 36);
+    ctx.lineTo(headNode.x + 5, headNode.y - 36);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#3fb950';
+    ctx.font = 'bold 10px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('HEAD', headNode.x, headNode.y - 40);
+  }
+
+  /* Branch labels on y-axis */
+  ctx.fillStyle = '#58a6ff';
+  ctx.font = 'bold 11px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('main', 4, mainY + 4);
+  if (state.featureBranchCreated) {
+    ctx.fillStyle = '#bc8cff';
+    ctx.fillText('feature-x', 4, featureY + 4);
+  }
+}
+
+/* ===================================================
+   GIT COMMAND IMPLEMENTATIONS
+   =================================================== */
+
+/* --- git init --- */
+function cmdInit() {
+  if (state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git init</span>',
+      '<span class="warning">Reinitialized existing Git repository.</span>'
+    ]);
+    showToast('Repository already initialized!', 'info');
+    return;
+  }
+
+  state.initialized = true;
+  state.remoteLinked = true;
+  /* Create initial files */
+  state.fileCounter++;
+  state.workingFiles = ['index.html', 'style.css', 'app.js'];
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git init</span>',
+    '<span class="success">Initialized empty Git repository in /project/.git/</span>',
+    '<span class="output">Created initial files: index.html, style.css, app.js</span>',
+    '<span class="prompt">$</span> <span class="cmd">git remote add origin https://github.com/you/project.git</span>',
+    '<span class="success">Remote \'origin\' added.</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F680; Repository Initialized!',
+    '<code>git init</code> creates a hidden <code>.git</code> folder that turns your project into a Git repository. This folder stores all the version history, branches, and configuration. We also linked to a remote called <strong>origin</strong> on GitHub.',
+    'Don\'t run <code>git init</code> inside another Git repository. Nested repos cause confusing issues.'
+  );
+
+  showToast('Repository initialized!', 'success');
+  renderAll();
+}
+
+/* --- git add --- */
+function cmdAdd() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git add .</span>',
+      '<span class="error">fatal: not a git repository. Run git init first.</span>'
+    ]);
+    setExplanation('&#x274C; Not a Repository', 'You need to initialize a Git repository first with <code>git init</code> before you can stage files.', null);
+    return;
+  }
+  if (state.workingFiles.length === 0) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git add .</span>',
+      '<span class="output">Nothing to add &mdash; working directory is clean.</span>'
+    ]);
+    setExplanation('&#x1F4AD; Nothing to Stage', 'There are no modified files in your working directory. Make changes to files first, then stage them.', null);
+    return;
+  }
+
+  /* Move files from working to staging */
+  state.stagedFiles = state.stagedFiles.concat(state.workingFiles);
+  var added = state.workingFiles.slice();
+  state.workingFiles = [];
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git add .</span>',
+    '<span class="success">Added ' + added.length + ' file(s) to staging area:</span>',
+    '<span class="output">&nbsp; ' + added.join(', ') + '</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F4E6; Files Staged!',
+    '<code>git add .</code> moves your changed files into the <strong>Staging Area</strong> (also called the "index"). Staging is like putting items in a box before shipping. You\'re selecting which changes to include in the next commit. The dot (<code>.</code>) means "add everything."',
+    'Using <code>git add .</code> stages ALL changes. For precision, use <code>git add filename</code> to stage specific files.'
+  );
+
+  showToast(added.length + ' file(s) staged!', 'success');
+  renderAll();
+}
+
+/* --- git commit --- */
+function cmdCommit() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git commit -m "..."</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+  if (state.stagedFiles.length === 0) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git commit</span>',
+      '<span class="error">nothing to commit &mdash; stage files first with git add</span>'
+    ]);
+    setExplanation('&#x274C; Nothing to Commit', 'You need to stage files with <code>git add</code> before committing. The staging area is empty.', 'Always check <code>git status</code> before committing to see what\'s staged.');
+    return;
+  }
+
+  state.commitCounter++;
+  var hash = generateHash();
+  var messages = [
+    'Add initial project files',
+    'Update styles and layout',
+    'Fix navigation bug',
+    'Add responsive design',
+    'Implement dark mode',
+    'Refactor component logic',
+    'Add unit tests',
+    'Improve performance',
+    'Update dependencies',
+    'Add feature-x functionality'
+  ];
+  var msg = state.commitCounter <= messages.length ? messages[state.commitCounter - 1] : 'Commit #' + state.commitCounter;
+  if (state.currentBranch === 'feature-x') {
+    msg = 'feature-x: ' + msg;
+  }
+
+  var commit = {
+    hash: hash,
+    message: msg,
+    branch: state.currentBranch,
+    files: state.stagedFiles.slice(),
+    merge: false
+  };
+
+  state.localCommits.push(commit);
+  state.stagedFiles = [];
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git commit -m "' + msg + '"</span>',
+    '<span class="success">[' + state.currentBranch + ' ' + hash + '] ' + msg + '</span>',
+    '<span class="output"> ' + commit.files.length + ' file(s) changed</span>'
+  ]);
+
+  setExplanation(
+    '&#x2705; Commit Created!',
+    '<code>git commit</code> takes everything in the Staging Area and saves it as a permanent snapshot (commit) in your local repository. Each commit has a unique hash (<code>' + hash + '</code>), a message, and a timestamp. Think of it as a "save point" you can always go back to.',
+    'Write clear, descriptive commit messages! "<em>fix stuff</em>" tells nobody anything. "<em>Fix navbar collapse on mobile</em>" is much better.'
+  );
+
+  showToast('Commit ' + hash + ' created!', 'success');
+  renderAll();
+}
+
+/* --- git status --- */
+function cmdStatus() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git status</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+
+  var lines = [
+    '<span class="prompt">$</span> <span class="cmd">git status</span>',
+    '<span class="output">On branch <strong>' + state.currentBranch + '</strong></span>'
+  ];
+
+  if (state.stagedFiles.length > 0) {
+    lines.push('<span class="success">Changes to be committed:</span>');
+    state.stagedFiles.forEach(function(f) {
+      lines.push('<span class="success">&nbsp;&nbsp;new file: ' + f + '</span>');
+    });
+  }
+  if (state.workingFiles.length > 0) {
+    lines.push('<span class="warning">Changes not staged for commit:</span>');
+    state.workingFiles.forEach(function(f) {
+      lines.push('<span class="warning">&nbsp;&nbsp;modified: ' + f + '</span>');
+    });
+  }
+  if (state.workingFiles.length === 0 && state.stagedFiles.length === 0) {
+    lines.push('<span class="output">nothing to commit, working tree clean</span>');
+  }
+
+  terminalWrite(lines);
+  setExplanation(
+    '&#x1F50D; Status Check',
+    '<code>git status</code> shows you the current state of your repository: which branch you\'re on, which files are modified, which are staged, and which are untracked. It\'s the most commonly used Git command &mdash; use it often!',
+    'Get in the habit of running <code>git status</code> before and after every operation. It\'s your safety check.'
+  );
+}
+
+/* --- git log --- */
+function cmdLog() {
+  if (!state.initialized || state.localCommits.length === 0) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git log</span>',
+      '<span class="error">' + (!state.initialized ? 'fatal: not a git repository.' : 'No commits yet.') + '</span>'
+    ]);
+    return;
+  }
+
+  var lines = ['<span class="prompt">$</span> <span class="cmd">git log --oneline</span>'];
+  state.localCommits.slice().reverse().slice(0, 8).forEach(function(c) {
+    var color = c.branch === 'main' ? 'var(--accent-blue)' : 'var(--accent-purple)';
+    lines.push('<span style="color:' + color + '">' + c.hash + '</span> <span class="output">' + c.message + '</span> <span style="color:var(--text-muted);font-size:0.75rem">(' + c.branch + ')</span>');
+  });
+
+  terminalWrite(lines);
+  setExplanation(
+    '&#x1F4DC; Commit History',
+    '<code>git log</code> shows the history of commits. Each entry shows the commit hash, message, author, and date. The <code>--oneline</code> flag shows a compact view. The most recent commits appear first.',
+    'If the log is very long, press <code>q</code> to quit the log viewer in a real terminal.'
+  );
+}
+
+/* --- git branch feature-x --- */
+function cmdBranch() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git branch feature-x</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+  if (state.featureBranchCreated) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git branch feature-x</span>',
+      '<span class="error">fatal: branch \'feature-x\' already exists.</span>'
+    ]);
+    setExplanation('&#x274C; Branch Exists', 'The branch <code>feature-x</code> already exists. You can switch to it with <code>git checkout feature-x</code>.', null);
+    return;
+  }
+
+  state.featureBranchCreated = true;
+  state.branches.push('feature-x');
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git branch feature-x</span>',
+    '<span class="success">Created branch \'feature-x\' from \'' + state.currentBranch + '\'</span>',
+    '<span class="output">Note: You\'re still on \'' + state.currentBranch + '\'. Use checkout to switch.</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F33F; Branch Created!',
+    '<code>git branch feature-x</code> creates a new branch called <strong>feature-x</strong>. A branch is like a parallel universe for your code &mdash; you can make changes without affecting <code>main</code>. Note: creating a branch does NOT switch to it. You\'re still on <code>' + state.currentBranch + '</code>.',
+    'Creating a branch doesn\'t switch to it! Use <code>git checkout feature-x</code> to switch. Many beginners forget this step.'
+  );
+
+  showToast('Branch feature-x created!', 'success');
+  renderAll();
+}
+
+/* --- git checkout feature-x --- */
+function cmdCheckout() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git checkout feature-x</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+  if (!state.featureBranchCreated) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git checkout feature-x</span>',
+      '<span class="error">error: branch \'feature-x\' not found. Create it first with git branch.</span>'
+    ]);
+    setExplanation('&#x274C; Branch Not Found', 'The branch <code>feature-x</code> doesn\'t exist. Create it first with <code>git branch feature-x</code>.', null);
+    return;
+  }
+
+  /* Toggle between branches */
+  var oldBranch = state.currentBranch;
+  state.currentBranch = state.currentBranch === 'main' ? 'feature-x' : 'main';
+
+  /* Warn about uncommitted changes */
+  var warningLines = [];
+  if (state.workingFiles.length > 0 || state.stagedFiles.length > 0) {
+    warningLines = ['<span class="warning">&#x26A0; Warning: You have uncommitted changes that were carried to the new branch!</span>'];
+  }
+
+  var lines = [
+    '<span class="prompt">$</span> <span class="cmd">git checkout ' + state.currentBranch + '</span>',
+    '<span class="success">Switched to branch \'' + state.currentBranch + '\'</span>'
+  ].concat(warningLines);
+
+  /* If switching to feature-x, simulate adding a file */
+  if (state.currentBranch === 'feature-x' && state.workingFiles.length === 0) {
+    state.workingFiles.push('feature.js');
+  }
+
+  terminalWrite(lines);
+
+  var uncommittedWarning = (state.workingFiles.length > 0 || state.stagedFiles.length > 0)
+    ? ' <strong>Warning:</strong> Your uncommitted changes came along to this branch!'
+    : '';
+
+  setExplanation(
+    '&#x1F500; Switched Branches!',
+    '<code>git checkout ' + state.currentBranch + '</code> moves HEAD to point at <strong>' + state.currentBranch + '</strong>. Your working directory now reflects the state of this branch. ' + uncommittedWarning,
+    'If you switch branches with uncommitted changes, those changes follow you! Always commit or stash before switching to keep things clean.'
+  );
+
+  showToast('Switched to ' + state.currentBranch, 'info');
+  renderAll();
+}
+
+/* --- git merge feature-x --- */
+function cmdMerge() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git merge feature-x</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+  if (!state.featureBranchCreated) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git merge feature-x</span>',
+      '<span class="error">error: branch \'feature-x\' not found.</span>'
+    ]);
+    return;
+  }
+  if (state.currentBranch === 'feature-x') {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git merge feature-x</span>',
+      '<span class="error">error: Can\'t merge a branch into itself! Switch to main first.</span>'
+    ]);
+    setExplanation('&#x274C; Can\'t Self-Merge', 'You\'re already on <code>feature-x</code>. You need to switch to <code>main</code> first, then merge feature-x into main.', 'Always switch to the branch you want to merge INTO, then merge the other branch.');
+    return;
+  }
+  if (state.featureBranchMerged) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git merge feature-x</span>',
+      '<span class="output">Already up to date.</span>'
+    ]);
+    return;
+  }
+
+  /* Check if feature-x has commits */
+  var featureCommits = state.localCommits.filter(function(c) { return c.branch === 'feature-x'; });
+  if (featureCommits.length === 0) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git merge feature-x</span>',
+      '<span class="output">Already up to date. (No unique commits on feature-x)</span>'
+    ]);
+    return;
+  }
+
+  state.featureBranchMerged = true;
+  var hash = generateHash();
+  var mergeCommit = {
+    hash: hash,
+    message: 'Merge branch \'feature-x\' into main',
+    branch: 'main',
+    files: [],
+    merge: true
+  };
+  state.localCommits.push(mergeCommit);
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git merge feature-x</span>',
+    '<span class="success">Merge made by the \'ort\' strategy.</span>',
+    '<span class="output"> ' + featureCommits.length + ' commit(s) merged from feature-x</span>',
+    '<span class="success">[main ' + hash + '] Merge branch \'feature-x\' into main</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F91D; Merge Complete!',
+    '<code>git merge feature-x</code> combines the commits from <strong>feature-x</strong> into <strong>main</strong>. Git created a special "merge commit" that has two parents &mdash; one from each branch. This preserves the full history of both branches.',
+    'Always make sure you\'re on the correct branch before merging. Merging is done INTO the current branch.'
+  );
+
+  showToast('Merge successful!', 'success');
+  renderAll();
+}
+
+/* --- git fetch --- */
+function cmdFetch() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git fetch origin</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git fetch origin</span>',
+    '<span class="output">remote: Enumerating objects... done.</span>',
+    '<span class="output">remote: Counting objects: 100% done.</span>',
+    '<span class="success">From https://github.com/you/project.git</span>',
+    '<span class="output"> * [updated] origin/main -> FETCH_HEAD</span>',
+    '<span class="info">&#x2139; Remote info downloaded but NOT merged into your local branch.</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F4E5; Fetch Complete!',
+    '<code>git fetch</code> downloads new commits from the remote (GitHub) but does <strong>NOT merge them</strong> into your working branch. It just updates your remote tracking branch (<code>origin/main</code>). Think of it as "checking your mail but not opening it yet." This is the safe way to see what\'s new on the remote.',
+    'Don\'t confuse fetch with pull! <code>fetch</code> is safe (no changes to your code). <code>pull</code> actually merges and can cause conflicts.'
+  );
+
+  showToast('Fetch complete', 'info');
+}
+
+/* --- git pull --- */
+function cmdPull() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git pull origin main</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+
+  /* Simulate pulling remote commits */
+  var newCommits = state.remoteCommits.filter(function(rc) {
+    return !state.localCommits.some(function(lc) { return lc.hash === rc.hash; });
+  });
+
+  if (newCommits.length === 0) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git pull origin main</span>',
+      '<span class="output">Already up to date.</span>'
+    ]);
+    setExplanation(
+      '&#x2705; Already Up to Date',
+      '<code>git pull</code> = <code>git fetch</code> + <code>git merge</code>. In this case, your local branch already has all the remote commits.',
+      null
+    );
+    return;
+  }
+
+  newCommits.forEach(function(c) { state.localCommits.push(c); });
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git pull origin main</span>',
+    '<span class="output">remote: Enumerating objects... done.</span>',
+    '<span class="success">Updating... Fast-forward</span>',
+    '<span class="output"> ' + newCommits.length + ' new commit(s) pulled from origin/main</span>',
+    '<span class="success">Your branch is now up to date with \'origin/main\'.</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F504; Pull Complete!',
+    '<code>git pull</code> is actually two commands in one: <code>git fetch</code> (download) + <code>git merge</code> (apply). It downloads new commits from GitHub and immediately merges them into your current branch. ' + newCommits.length + ' new commit(s) were added to your local history.',
+    'Pulling can cause merge conflicts if you and someone else edited the same files. Always commit your local changes before pulling.'
+  );
+
+  showToast('Pulled ' + newCommits.length + ' commit(s)', 'success');
+  renderAll();
+}
+
+/* --- git push --- */
+function cmdPush() {
+  if (!state.initialized) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git push origin main</span>',
+      '<span class="error">fatal: not a git repository.</span>'
+    ]);
+    return;
+  }
+  if (state.localCommits.length === 0) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git push origin main</span>',
+      '<span class="error">error: nothing to push. Make some commits first.</span>'
+    ]);
+    return;
+  }
+
+  /* Check if remote is ahead */
+  var remoteAhead = state.remoteCommits.some(function(rc) {
+    return !state.localCommits.some(function(lc) { return lc.hash === rc.hash; });
+  });
+
+  if (remoteAhead) {
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="cmd">git push origin main</span>',
+      '<span class="error">! [rejected] main -> main (non-fast-forward)</span>',
+      '<span class="error">error: failed to push some refs to \'origin\'</span>',
+      '<span class="warning">hint: Updates were rejected because the remote contains work that you do not have locally.</span>',
+      '<span class="warning">hint: git pull before pushing again.</span>'
+    ]);
+
+    setExplanation(
+      '&#x26D4; Push Rejected!',
+      'Your push was <strong>rejected</strong> because the remote repository has commits that you don\'t have locally. Git prevents you from overwriting other people\'s work. You need to <code>git pull</code> first to get those changes, resolve any conflicts, then push again.',
+      'NEVER use <code>git push --force</code> on shared branches. It overwrites everyone else\'s work. Always pull first.'
+    );
+
+    showToast('Push rejected! Pull first.', 'error');
+    return;
+  }
+
+  /* Push local commits to remote */
+  state.remoteCommits = state.localCommits.slice();
+
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="cmd">git push origin ' + state.currentBranch + '</span>',
+    '<span class="output">Enumerating objects: done.</span>',
+    '<span class="output">Counting objects: 100% done.</span>',
+    '<span class="output">Writing objects: 100% done.</span>',
+    '<span class="success">To https://github.com/you/project.git</span>',
+    '<span class="success"> * [new branch] ' + state.currentBranch + ' -> ' + state.currentBranch + '</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F680; Push Successful!',
+    '<code>git push</code> uploads your local commits to the remote repository (GitHub). Now your teammates can see your changes. The remote branch <code>origin/' + state.currentBranch + '</code> is now in sync with your local <code>' + state.currentBranch + '</code>.',
+    'Always pull before pushing when working with others. This avoids the dreaded "rejected" error.'
+  );
+
+  showToast('Pushed to origin/' + state.currentBranch, 'success');
+  renderAll();
+}
+
+/* --- Reset Simulation --- */
+function cmdReset() {
+  state = {
+    initialized: false,
+    currentBranch: 'main',
+    branches: ['main'],
+    workingFiles: [],
+    stagedFiles: [],
+    localCommits: [],
+    remoteCommits: [],
+    commitCounter: 0,
+    featureBranchCreated: false,
+    featureBranchMerged: false,
+    remoteLinked: false,
+    fileCounter: 0
+  };
+
+  terminalClear();
+  terminalWrite([
+    '<span class="prompt">$</span> <span class="info">Simulation reset. All data cleared.</span>',
+    '<span class="output">Click <strong>git init</strong> to start fresh!</span>'
+  ]);
+
+  setExplanation(
+    '&#x1F504; Simulation Reset',
+    'Everything has been cleared. Start fresh by clicking <code>git init</code>!',
+    null
+  );
+
+  document.getElementById('storyResult').innerHTML = '<div class="empty-state">Click a scenario above to see it play out.</div>';
+
+  showToast('Simulation reset!', 'info');
+  renderAll();
+}
+
+/* ===================================================
+   STORY MODE SCENARIOS
+   =================================================== */
+function runScenario(num) {
+  var el = document.getElementById('storyResult');
+
+  if (num === 1) {
+    /* Alex pushes first */
+    el.innerHTML = '<div class="story-result-content">' +
+      '<h3 style="color:var(--accent-purple);margin-bottom:12px;">&#x1F4D6; Scenario 1: Alex Pushes First</h3>' +
+      '<p style="color:var(--text-secondary);margin-bottom:10px;"><strong>What happens:</strong></p>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;margin-bottom:10px;">' +
+      '1. You and Alex both clone the repo (same starting point)<br>' +
+      '2. Alex makes changes, commits, and pushes to GitHub &#x2705;<br>' +
+      '3. Now the remote is <strong>1 commit ahead</strong> of your local repo<br>' +
+      '4. You make your own commit locally<br>' +
+      '5. You try to push... &#x274C; <strong>REJECTED!</strong></p>' +
+      '<div style="background:var(--bg-primary);border:1px solid rgba(248,81,73,0.3);border-radius:8px;padding:14px;margin:12px 0;font-family:Consolas,monospace;font-size:0.82rem;">' +
+      '<span style="color:var(--accent-red)">! [rejected]</span> main -> main (non-fast-forward)<br>' +
+      '<span style="color:var(--accent-orange)">hint: Updates were rejected because the remote contains<br>work that you do not have locally.</span>' +
+      '</div>' +
+      '<p style="color:var(--accent-green);font-weight:600;margin:10px 0 6px;">&#x2705; How to fix:</p>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;">Run <code style="color:var(--accent-blue)">git pull origin main</code> first to get Alex\'s changes, then push again.</p>' +
+      '</div>';
+
+    /* Also simulate this in state */
+    if (state.initialized) {
+      var alexHash = generateHash();
+      state.remoteCommits.push({
+        hash: alexHash,
+        message: 'Alex: Update README.md',
+        branch: 'main',
+        files: ['README.md'],
+        merge: false
+      });
+      renderRemoteRepo();
+    }
+
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="info">&#x1F4D6; Running Scenario 1: Alex Pushes First</span>',
+      '<span class="output">[Alex\'s machine] git commit -m "Update README.md"</span>',
+      '<span class="output">[Alex\'s machine] git push origin main &#x2705;</span>',
+      '<span class="warning">Remote is now AHEAD of your local repo!</span>'
+    ]);
+  }
+
+  else if (num === 2) {
+    /* Push without pulling */
+    el.innerHTML = '<div class="story-result-content">' +
+      '<h3 style="color:var(--accent-orange);margin-bottom:12px;">&#x26A0;&#xFE0F; Scenario 2: Push Without Pulling</h3>' +
+      '<p style="color:var(--text-secondary);margin-bottom:10px;"><strong>What happens:</strong></p>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;margin-bottom:10px;">' +
+      '1. Alex pushed new commits to GitHub<br>' +
+      '2. You don\'t know about them (you haven\'t fetched/pulled)<br>' +
+      '3. You make your own commits<br>' +
+      '4. You run <code style="color:var(--accent-blue)">git push</code>...<br>' +
+      '5. &#x1F4A5; <strong>REJECTED!</strong> Your local is behind the remote.</p>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;">Git refuses because pushing would <strong>overwrite Alex\'s work</strong>. Git is protecting your team!</p>' +
+      '<p style="color:var(--accent-green);font-weight:600;margin:10px 0 6px;">&#x2705; The correct workflow:</p>' +
+      '<div style="background:var(--bg-primary);border:1px solid rgba(63,185,80,0.3);border-radius:8px;padding:14px;margin:8px 0;font-family:Consolas,monospace;font-size:0.82rem;color:var(--accent-green);">' +
+      'git pull origin main&nbsp;&nbsp;&nbsp;# Get Alex\'s changes first<br>' +
+      '# resolve any conflicts if needed<br>' +
+      'git push origin main&nbsp;&nbsp;# Now push safely &#x2705;</div>' +
+      '<div class="mistake-box" style="margin-top:12px;"><div class="label">&#x26A0;&#xFE0F; Never Do This</div><p>Don\'t use <code>git push --force</code> to override the rejection. This deletes Alex\'s commits from the remote!</p></div>' +
+      '</div>';
+
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="info">&#x1F4D6; Running Scenario 2: Push Without Pulling</span>',
+      '<span class="error">This is the #1 beginner mistake in team Git workflows.</span>',
+      '<span class="warning">Always run \'git pull\' before \'git push\' when collaborating!</span>'
+    ]);
+  }
+
+  else if (num === 3) {
+    /* Merge conflict */
+    el.innerHTML = '<div class="story-result-content">' +
+      '<h3 style="color:var(--accent-red);margin-bottom:12px;">&#x1F4A5; Scenario 3: Merge Conflict!</h3>' +
+      '<p style="color:var(--text-secondary);margin-bottom:10px;"><strong>What happens:</strong></p>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;margin-bottom:10px;">' +
+      '1. You both edit <strong>the same line</strong> in <code>app.js</code><br>' +
+      '2. Alex writes: <code>const color = "blue";</code><br>' +
+      '3. You write: <code>const color = "red";</code><br>' +
+      '4. Alex pushes first<br>' +
+      '5. You pull &mdash; and Git says: <strong>CONFLICT!</strong></p>' +
+      '<div class="conflict-block">' +
+      '<span class="marker">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span><br>' +
+      '<span class="yours">const color = "red";&nbsp;&nbsp;&nbsp;// Your version</span><br>' +
+      '<span class="marker">=======</span><br>' +
+      '<span class="theirs">const color = "blue";&nbsp;&nbsp;// Alex\'s version</span><br>' +
+      '<span class="marker">&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature-alex</span>' +
+      '</div>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;">Git can\'t decide which version to keep, so it shows you BOTH and asks you to choose.</p>' +
+      '<p style="color:var(--accent-green);font-weight:600;margin:10px 0 6px;">&#x2705; Resolved Version:</p>' +
+      '<div class="resolved-block">' +
+      '<div class="label">&#x2705; After manual resolution:</div>' +
+      '<code style="color:var(--accent-cyan)">const color = "purple"; // Agreed upon by both</code>' +
+      '</div>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;margin-top:10px;">After resolving, run: <code style="color:var(--accent-blue)">git add app.js</code> then <code style="color:var(--accent-blue)">git commit</code>.</p>' +
+      '<p style="color:var(--text-muted);font-size:0.82rem;margin-top:6px;">&#x1F4A1; Conflicts are normal! They just mean two people touched the same code. Communication helps prevent them.</p>' +
+      '</div>';
+
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="info">&#x1F4D6; Running Scenario 3: Merge Conflict</span>',
+      '<span class="error">CONFLICT (content): Merge conflict in app.js</span>',
+      '<span class="warning">Automatic merge failed; fix conflicts and then commit.</span>',
+      '<span class="output">After resolving: git add . && git commit</span>'
+    ]);
+  }
+
+  else if (num === 4) {
+    /* Clean merge */
+    el.innerHTML = '<div class="story-result-content">' +
+      '<h3 style="color:var(--accent-green);margin-bottom:12px;">&#x2705; Scenario 4: Clean Merge!</h3>' +
+      '<p style="color:var(--text-secondary);margin-bottom:10px;"><strong>What happens:</strong></p>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.8;margin-bottom:10px;">' +
+      '1. You edit <code>style.css</code><br>' +
+      '2. Alex edits <code>README.md</code><br>' +
+      '3. Different files = no conflict!<br>' +
+      '4. Alex pushes first<br>' +
+      '5. You pull &mdash; Git auto-merges cleanly &#x2705;</p>' +
+      '<div style="background:var(--bg-primary);border:1px solid rgba(63,185,80,0.3);border-radius:8px;padding:14px;margin:12px 0;font-family:Consolas,monospace;font-size:0.82rem;color:var(--accent-green);">' +
+      '$ git pull origin main<br>' +
+      'Auto-merging...<br>' +
+      'Merge made by the \'ort\' strategy. &#x2705;<br>' +
+      'README.md | 3 +++<br>' +
+      '1 file changed, 3 insertions(+)' +
+      '</div>' +
+      '<p style="color:var(--text-secondary);font-size:0.85rem;">Since you and Alex edited <strong>different files</strong>, Git can automatically combine both sets of changes. No human intervention needed!</p>' +
+      '<p style="color:var(--accent-cyan);font-size:0.85rem;margin-top:10px;">&#x1F4A1; <strong>Pro tip:</strong> To avoid conflicts, coordinate with your team about who\'s working on which files. Keep commits small and focused.</p>' +
+      '</div>';
+
+    terminalWrite([
+      '<span class="prompt">$</span> <span class="info">&#x1F4D6; Running Scenario 4: Clean Merge</span>',
+      '<span class="success">Auto-merging... done!</span>',
+      '<span class="success">No conflicts! Different files were changed.</span>'
+    ]);
+  }
+}
+
+/* ===================================================
+   QUIZ SYSTEM
+   =================================================== */
+var quizData = [
+  {
+    question: "1. What happens if you push without pulling first (when the remote has new commits)?",
+    options: [
+      "Your push overwrites the remote",
+      "Git rejects the push to protect the remote",
+      "Git automatically merges and pushes",
+      "Nothing happens"
+    ],
+    correct: 1,
+    explanation: "Git rejects the push because the remote has commits you don't have locally. This prevents you from accidentally overwriting your teammate's work. You need to pull first, resolve any conflicts, then push again."
+  },
+  {
+    question: "2. What is the difference between git fetch and git pull?",
+    options: [
+      "They are exactly the same",
+      "fetch downloads and merges; pull only downloads",
+      "fetch only downloads; pull downloads AND merges",
+      "fetch is for branches; pull is for files"
+    ],
+    correct: 2,
+    explanation: "git fetch downloads changes from the remote but doesn't merge them (safe to inspect first). git pull = git fetch + git merge — it downloads AND immediately applies the changes to your current branch."
+  },
+  {
+    question: "3. Why do merge conflicts happen?",
+    options: [
+      "Because Git is broken",
+      "Because two people committed at the same time",
+      "Because two people edited the same lines in the same file",
+      "Because the internet connection was slow"
+    ],
+    correct: 2,
+    explanation: "Merge conflicts happen when two people edit the same lines in the same file. Git can't automatically decide whose version to keep, so it asks you to manually resolve the conflict. If you edit different files (or different parts of the same file), Git merges cleanly!"
+  },
+  {
+    question: "4. What does git add actually do?",
+    options: [
+      "Uploads files to GitHub",
+      "Creates a new commit",
+      "Moves changes to the staging area (preparing for commit)",
+      "Adds a new file to the project"
+    ],
+    correct: 2,
+    explanation: "git add moves your changes into the Staging Area (also called the 'index'). It's like putting items in a box before shipping. The staging area lets you choose exactly which changes to include in the next commit. It does NOT upload anything or create a commit."
+  },
+  {
+    question: "5. What is HEAD in Git?",
+    options: [
+      "The name of the main branch",
+      "A pointer to the commit/branch you're currently on",
+      "The first commit ever made",
+      "The remote server"
+    ],
+    correct: 1,
+    explanation: "HEAD is a special pointer that tells Git which commit (and branch) you're currently looking at. Think of it as a 'You Are Here' marker on a map. When you checkout a branch, HEAD moves to point at that branch's latest commit."
+  },
+  {
+    question: "6. What is a Pull Request (PR)?",
+    options: [
+      "A Git command that pulls code from the remote",
+      "A GitHub feature to request code review before merging",
+      "A way to delete branches",
+      "An automatic merge tool"
+    ],
+    correct: 1,
+    explanation: "A Pull Request is a GitHub (not Git!) feature where you ask your team to review your code before it's merged into the main branch. It enables discussion, code review, and approval workflows. It's central to collaborative development."
+  }
+];
+
+function renderQuiz() {
+  var el = document.getElementById('quizList');
+  el.innerHTML = quizData.map(function(q, qi) {
+    var optionsHtml = q.options.map(function(opt, oi) {
+      return '<button class="option-btn" onclick="checkAnswer(' + qi + ', ' + oi + ', this)">' + String.fromCharCode(65 + oi) + '. ' + opt + '</button>';
+    }).join('');
+    return '<div class="quiz-item" id="quiz-' + qi + '">' +
+      '<div class="question">' + q.question + '</div>' +
+      '<div class="options">' + optionsHtml + '</div>' +
+      '<div class="quiz-feedback" id="quiz-feedback-' + qi + '"></div>' +
+    '</div>';
+  }).join('');
+}
+
+function checkAnswer(quizIndex, optionIndex, btnEl) {
+  var quiz = quizData[quizIndex];
+  var container = document.getElementById('quiz-' + quizIndex);
+  var feedback = document.getElementById('quiz-feedback-' + quizIndex);
+  var buttons = container.querySelectorAll('.option-btn');
+
+  /* Disable all buttons */
+  buttons.forEach(function(btn, i) {
+    btn.classList.add('selected');
+    if (i === quiz.correct) btn.classList.add('correct');
+    if (i === optionIndex && i !== quiz.correct) btn.classList.add('wrong');
+  });
+
+  /* Show feedback */
+  var isCorrect = optionIndex === quiz.correct;
+  feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  feedback.innerHTML = (isCorrect ? '&#x2705; Correct! ' : '&#x274C; Not quite. ') + quiz.explanation;
+}
+
+/* ===================================================
+   INITIALIZATION
+   =================================================== */
+renderAll();
+renderQuiz();
+
+/* Handle canvas resize */
+window.addEventListener('resize', function() {
+  renderBranchGraph();
+});
+</script>
+</body>
+</html>
